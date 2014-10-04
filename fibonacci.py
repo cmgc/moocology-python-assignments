@@ -16,5 +16,5 @@ def fibonacci(n):
       print last 
       i += 1
 
-
 fibonacci(10)
+fibonacci(5)
