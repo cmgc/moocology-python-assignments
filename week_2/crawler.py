@@ -1,75 +1,69 @@
 import requests
 from bs4 import BeautifulSoup
-import re
 
-
+# some helpers
 def merge(original={}, new={}):
     for key, value in new.items():
         original[key] = original.get(key, 0) + value
 
 
-def crawl(url, next_urls={}):
+def crawl(url, links={}):
     resp = requests.get(url)
+
     if resp.status_code != requests.codes.ok:
-        return
+        return {}
+
     content = unicode(resp.content, errors='replace')
     soup = BeautifulSoup(content)
+
     for link in soup.find_all('a'):
         href = link.get('href')
-        try:
-            m = re.search(r"^http", href)
-        except TypeError:
-            m = False
-        if m:
-            next_urls[href] = next_urls.get(href, 0) + 1
+
+        if type(href) == unicode and href.startswith('http'):
+            links[href] = links.get(href, 0) + 1
 
 
 def crawler(url, depth=1):
     urls = {}
     crawl(url, urls)
-
     current = urls
+
     while depth > 1:
         next_urls = {}
-        for u in current.keys():
-            crawl(u, next_urls)
+        for item in current:
+            crawl(item, next_urls)
         current = next_urls
         merge(urls, next_urls)
         depth -= 1
-    if depth == 1:
-        return urls
+    return urls
 
-our_urls = {}
+
 def recursive_crawl(url, depth=1, urls={}):
-    resp = requests.get(url)
-    if resp.status_code != requests.codes.ok:
+    next_urls = {}
+    crawl(url, next_urls)
+
+    if not next_urls:
         return {}
 
-    next_urls = {}
-    content = unicode(resp.content, errors='ignore')
-    soup = BeautifulSoup(content)
-    for link in soup.find_all('a'):
-        href = link.get('href')
-        try:
-            m = re.search(r"^http", href)
-        except TypeError:
-            m = False
-        if m:
-            next_urls[href] = next_urls.get(href, 0) + 1
     merge(urls, next_urls)
-    if depth > 1:
-        #merge(urls, next_urls)
-        print urls
-        for u in next_urls.keys():
-            recursive_crawl(u, depth-1, urls)
-    if depth == 1:
-        return urls
 
+    if depth > 1:
+        for item in next_urls:
+            recursive_crawl(item, depth-1, urls)
+    return urls
+
+
+####
+our_urls = {}
 #ans = crawler('http://repository.apache.org/snapshots/', 3)
 recursive_crawl('http://repository.apache.org/snapshots/', 3, our_urls)
 
+#print type(our_urls)
+
 def print_urls(n={}):
-    for k,v in n:
+    for k,v in n.items():
         print k, v
 
+#print_urls(ans)
 print_urls(our_urls)
+
