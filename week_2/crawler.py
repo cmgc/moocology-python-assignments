@@ -13,8 +13,8 @@ def crawl(url, links={}):
     if resp.status_code != requests.codes.ok:
         return {}
 
-    content = unicode(resp.content, errors='replace')
-    soup = BeautifulSoup(content)
+    # content = unicode(resp.content, errors='replace')
+    soup = BeautifulSoup(resp.text)
 
     for link in soup.body.find_all('a'):
         href = link.get('href')
