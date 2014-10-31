@@ -16,10 +16,10 @@ def crawl(url, links={}):
     content = unicode(resp.content, errors='replace')
     soup = BeautifulSoup(content)
 
-    for link in soup.find_all('a'):
+    for link in soup.body.find_all('a'):
         href = link.get('href')
 
-        if type(href) == unicode and href.startswith('http'):
+        if isinstance(href, basestring) and href.startswith('http'):
             links[href] = links.get(href, 0) + 1
 
 
