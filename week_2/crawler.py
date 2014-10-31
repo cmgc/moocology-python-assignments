@@ -2,60 +2,74 @@ import requests
 from bs4 import BeautifulSoup
 import re
 
-def crawl(url, urls={}):
-    resp = requests.get(url)
-    if resp.status_code == requests.codes.ok:
-        soup = BeautifulSoup(resp.content)
-        for link in soup.find_all('a'):
-            href = link.get('href')
-            try:
-                m = re.search(r"^http", href)
-            except TypeError:
-                m = False
-            if m:
-                urls[href] = urls.get(href, 0) + 1
+
+def merge(original={}, new={}):
+    for key, value in new.items():
+        original[key] = original.get(key, 0) + value
 
 
-def crawler(url, depth):
-    if depth < 1:
-        return []
-
-    urls = {}
-    crawl(url, urls)
-
-    while depth > 1:
-        for url in urls.keys():
-            crawl(url, urls)
-        depth -= 1
-
-    return urls
-
-
-# recursive crawler
-def r_crawler(url, depth, urls = {}):
+def crawl(url, next_urls={}):
     resp = requests.get(url)
     if resp.status_code != requests.codes.ok:
         return
-
-    soup = BeautifulSoup(resp.content)
+    content = unicode(resp.content, errors='replace')
+    soup = BeautifulSoup(content)
     for link in soup.find_all('a'):
         href = link.get('href')
         try:
             m = re.search(r"^http", href)
         except TypeError:
             m = False
-
         if m:
-            urls[href] = urls.get(href, 0) + 1
+            next_urls[href] = next_urls.get(href, 0) + 1
 
+
+def crawler(url, depth=1):
+    urls = {}
+    crawl(url, urls)
+
+    current = urls
+    while depth > 1:
+        next_urls = {}
+        for u in current.keys():
+            crawl(u, next_urls)
+        current = next_urls
+        merge(urls, next_urls)
+        depth -= 1
+    if depth == 1:
+        return urls
+
+our_urls = {}
+def recursive_crawl(url, depth=1, urls={}):
+    resp = requests.get(url)
+    if resp.status_code != requests.codes.ok:
+        return {}
+
+    next_urls = {}
+    content = unicode(resp.content, errors='ignore')
+    soup = BeautifulSoup(content)
+    for link in soup.find_all('a'):
+        href = link.get('href')
+        try:
+            m = re.search(r"^http", href)
+        except TypeError:
+            m = False
+        if m:
+            next_urls[href] = next_urls.get(href, 0) + 1
+    merge(urls, next_urls)
     if depth > 1:
-        for u in urls.keys():
-            r_crawler(u, depth-1, urls)
-    return urls
+        #merge(urls, next_urls)
+        print urls
+        for u in next_urls.keys():
+            recursive_crawl(u, depth-1, urls)
+    if depth == 1:
+        return urls
 
+#ans = crawler('http://repository.apache.org/snapshots/', 3)
+recursive_crawl('http://repository.apache.org/snapshots/', 3, our_urls)
 
-ans = crawler('http://repository.apache.org/snapshots/', 2)
-#ans = crawler('http://i.ua', 2)
-#ans = r_crawler('http://repository.apache.org/snapshots/', 3, urls = {})
-for i, v in ans.items():
-    print i, v
+def print_urls(n={}):
+    for k,v in n:
+        print k, v
+
+print_urls(our_urls)
