@@ -2,12 +2,12 @@ import requests
 from bs4 import BeautifulSoup
 
 # some helpers
-def merge(original={}, new={}):
+def merge(original, new):
     for key, value in new.items():
         original[key] = original.get(key, 0) + value
 
 
-def crawl(url, links={}):
+def crawl(url, links):
     resp = requests.get(url)
 
     if resp.status_code != requests.codes.ok:
@@ -38,7 +38,7 @@ def crawler(url, depth=1):
     return urls
 
 
-def recursive_crawl(url, depth=1, urls={}):
+def recursive_crawl(url, depth=1, urls):
     next_urls = {}
     crawl(url, next_urls)
 
@@ -60,7 +60,7 @@ recursive_crawl('http://repository.apache.org/snapshots/', 3, our_urls)
 
 #print type(our_urls)
 
-def print_urls(n={}):
+def print_urls(n):
     for k,v in n.items():
         print k, v
 
